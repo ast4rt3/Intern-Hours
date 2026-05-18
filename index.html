@@ -548,6 +548,167 @@
     </div>
   </section>
 
+  <!-- Developers Section -->
+  <section id="devs" class="relative overflow-hidden" style="background: #0d0d14;">
+    <!-- PixelBlast WebGL background canvas -->
+    <div id="pixel-blast-bg" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></div>
+
+    <!-- Dark overlay so cards stay readable -->
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(13,13,20,0.55) 0%,rgba(13,13,20,0.72) 100%);z-index:1;pointer-events:none;"></div>
+
+    <!-- Content -->
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-24">
+      <!-- Heading -->
+      <div class="text-center mb-14">
+        <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold tracking-widest uppercase mb-4"
+          style="background:rgba(180,151,207,0.12);color:#B497CF;border:1px solid rgba(180,151,207,0.25);">
+          Open Source
+        </span>
+        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-4">Meet the Developers</h2>
+        <p class="text-zinc-400 text-lg max-w-xl mx-auto">
+          The people who made this possible — contributors from the
+          <a href="https://github.com/Tedeyy/Intern-Hours" target="_blank" rel="noopener"
+            class="text-purple-300 underline underline-offset-4 hover:text-white transition">
+            Tedeyy/Intern-Hours
+          </a>
+          repository, sorted by longest contributor.
+        </p>
+      </div>
+
+      <!-- Cards grid — populated by JS -->
+      <div id="devs-container"
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 justify-items-center">
+        <!-- Skeleton placeholders while loading -->
+        <div class="dev-skeleton w-full max-w-[220px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pulse"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+          <div class="w-20 h-20 rounded-full" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-4 w-28 rounded" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-3 w-20 rounded" style="background:rgba(255,255,255,0.06);"></div>
+        </div>
+        <div class="dev-skeleton w-full max-w-[220px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pulse"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+          <div class="w-20 h-20 rounded-full" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-4 w-28 rounded" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-3 w-20 rounded" style="background:rgba(255,255,255,0.06);"></div>
+        </div>
+        <div class="dev-skeleton w-full max-w-[220px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pulse"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+          <div class="w-20 h-20 rounded-full" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-4 w-28 rounded" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-3 w-20 rounded" style="background:rgba(255,255,255,0.06);"></div>
+        </div>
+        <div class="dev-skeleton w-full max-w-[220px] rounded-2xl p-6 flex flex-col items-center gap-3 animate-pulse"
+          style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+          <div class="w-20 h-20 rounded-full" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-4 w-28 rounded" style="background:rgba(255,255,255,0.08);"></div>
+          <div class="h-3 w-20 rounded" style="background:rgba(255,255,255,0.06);"></div>
+        </div>
+      </div>
+
+      <!-- Error state (hidden by default) -->
+      <p id="devs-error" class="hidden text-center text-zinc-500 mt-6 text-sm"></p>
+    </div>
+  </section>
+
+  <!-- PixelBlast bundle -->
+  <script src="assets/js/PixelBlast.bundle.js"></script>
+
+  <!-- Developers init script -->
+  <script>
+    (async () => {
+      // ── 1. Boot the PixelBlast background ──────────────────────────────────
+      const bgEl = document.getElementById('pixel-blast-bg');
+      if (bgEl && window.initPixelBlast) {
+        window.initPixelBlast(bgEl, {
+          variant:            'square',
+          pixelSize:          4,
+          color:              '#B497CF',
+          patternScale:       2,
+          patternDensity:     1,
+          pixelSizeJitter:    0,
+          enableRipples:      true,
+          rippleSpeed:        0.4,
+          rippleThickness:    0.12,
+          rippleIntensityScale: 1.5,
+          liquid:             false,
+          liquidStrength:     0.12,
+          liquidRadius:       1.2,
+          liquidWobbleSpeed:  5,
+          speed:              0.5,
+          edgeFade:           0.25,
+          transparent:        true,
+        });
+      }
+
+      // ── 2. Fetch GitHub contributors & user details ─────────────────────────
+      const container = document.getElementById('devs-container');
+      const errorEl   = document.getElementById('devs-error');
+
+      try {
+        const repoOwner = 'Tedeyy';
+        const repoName  = 'Intern-Hours';
+
+        // Get all contributors (handles pagination up to 100)
+        const contribRes = await fetch(
+          `https://api.github.com/repos/${repoOwner}/${repoName}/contributors?per_page=100`
+        );
+        if (!contribRes.ok) throw new Error(`GitHub API ${contribRes.status}`);
+        const contributors = await contribRes.json();
+
+        // Fetch full user profile for each contributor in parallel
+        const profiles = await Promise.all(
+          contributors.map(c => fetch(c.url).then(r => r.json()))
+        );
+
+        // Sort by account creation date, oldest first
+        profiles.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        // Remove skeleton cards
+        container.querySelectorAll('.dev-skeleton').forEach(el => el.remove());
+
+        // Render contributor cards
+        profiles.forEach(user => {
+          const card = document.createElement('a');
+          card.href   = `https://github.com/${user.login}`;
+          card.target = '_blank';
+          card.rel    = 'noopener noreferrer';
+          card.className = 'group w-full max-w-[220px] rounded-2xl p-6 flex flex-col items-center gap-3 transition-all duration-300 hover:scale-105 cursor-pointer';
+          card.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);text-decoration:none;';
+          card.innerHTML = `
+            <div class="relative">
+              <img
+                src="${user.avatar_url}&s=160"
+                alt="${user.login}"
+                loading="lazy"
+                class="w-20 h-20 rounded-full object-cover ring-2 transition-all duration-300 group-hover:ring-4"
+                style="ring-color:#B497CF;border:2px solid rgba(180,151,207,0.4);"
+                onerror="this.src='https://avatars.githubusercontent.com/u/0?v=4'"
+              />
+              <span class="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full"
+                style="background:#B497CF;">
+                <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+              </span>
+            </div>
+            <div class="text-center">
+              <p class="font-semibold text-white text-sm leading-tight">${user.name || user.login}</p>
+              <p class="text-xs mt-0.5" style="color:#B497CF;">@${user.login}</p>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        // Show error, remove skeletons
+        container.querySelectorAll('.dev-skeleton').forEach(el => el.remove());
+        errorEl.textContent = 'Could not load contributors. ' + err.message;
+        errorEl.classList.remove('hidden');
+        console.error('Devs section error:', err);
+      }
+    })();
+  </script>
+
   <!-- Footer -->
   <footer class="bg-zinc-950/80 border-t border-white/5 text-zinc-400 py-16 px-6 lg:px-8 relative z-10">
     <div class="max-w-7xl mx-auto">
